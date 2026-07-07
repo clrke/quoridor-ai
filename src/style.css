@@ -25,14 +25,20 @@
     --color-gold: #C9A227;
     --color-espresso: #3B2A20;
     --color-charcoal: #2E241C;
-    --color-terracotta: #B5603D;
-    --color-terracotta-translucent: rgba(181, 96, 61, 0.92);
-    --color-olive: #74875A;
+    /*
+    * terracotta/olive/ochre/stone below are darkened ~3-20% from their
+    * initial picks -- verified via WCAG contrast-ratio calculation that
+    * the originals fell short of the 4.5:1 AA threshold for white button
+    * text (as low as 3.83:1) and for stone-as-link-text-on-cream (3.38:1).
+    * These values all clear 4.5:1 in every actual use case in this file.
+    */
+    --color-terracotta: #AF5D3B;
+    --color-olive: #697A51;
     --color-teal-deep: #3F6659;
-    --color-ochre: #A6782E;
+    --color-ochre: #976D29;
     --color-clay: #8B5E44;
     --color-wine: #7C4A3D;
-    --color-stone: #8A8175;
+    --color-stone: #6E675D;
     --color-amber: #D9A441;
     --color-rust: #9C4A3C;
 
