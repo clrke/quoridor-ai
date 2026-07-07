@@ -792,13 +792,15 @@ class View {
     // Show the coach modal in its "analyzing" state while the Strong AI thinks.
     // Clears out the previous move's board/text/legend right away so none of
     // it can remain visible (even briefly) while the new move is reviewed.
-    showCoachAnalyzing() {
+    // initialPercentage lets the progress bar pick up where a background
+    // prefetch analysis already left off, instead of always restarting at 0%.
+    showCoachAnalyzing(initialPercentage = 0) {
         const result = document.getElementById("coach_result");
         const analyzing = document.getElementById("coach_analyzing");
         this.clearCoachResult();
         if (result) result.classList.add("hidden");
         if (analyzing) analyzing.classList.remove("hidden");
-        this.adjustCoachProgressBar(0);
+        this.adjustCoachProgressBar(initialPercentage);
         if (this.htmlCoachMessageBox) {
             this.htmlCoachMessageBox.classList.remove("hidden");
         }

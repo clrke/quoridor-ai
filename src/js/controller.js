@@ -21,11 +21,16 @@ class Controller {
         this.numOfMCTSSimulations = null;
         this.uctConst = uctConst;
 
-        // Move-review coach: after every human move, the Strong AI reviews it.
+        // Move-review coach: reviews every human move against the Strong AI.
         // This must be set before the View is constructed, since the View
         // reads this.coachEnabled synchronously to label the toggle button.
         this.coachEnabled = !aiDevelopMode;
-        this.coachWorker = null;
+        // The Strong-AI analysis for the *current* human turn. Started the
+        // moment it becomes the human's turn (see maybeStartCoachPrefetch),
+        // not when they move — so by the time they do move, the analysis is
+        // often already finished. Shape: {game, worker, resultMove, done,
+        // failed, progress}, or null when nothing is running/available.
+        this.coachPrefetch = null;
         this.pendingHumanMove = null;
         this.coachGame = null;  // snapshot of the game just before the pending human move
 
@@ -53,33 +58,85 @@ class Controller {
         };
     }
 
-    // Create a dedicated worker used only for reviewing the human's move
-    // with the Strong AI. It is kept separate from the opponent AI worker.
-    setNewCoachWorker() {
-        if (this.coachWorker !== null) {
-            this.coachWorker.terminate();
-        }
-        this.coachWorker = new Worker('js/worker.js');
+    // Kick off the Strong AI's move-review analysis right now, for the
+    // current game position. Called the instant it becomes the human's
+    // turn (see maybeStartCoachPrefetch) so the analysis runs in the
+    // background while the human is still deciding on their move, rather
+    // than only starting after they move.
+    startCoachPrefetch() {
+        this.cancelCoachPrefetch();
+        const snapshot = Game.clone(this.game);
+        const worker = new Worker('js/worker.js');
+        const prefetch = {
+            game: snapshot,
+            worker: worker,
+            resultMove: null,
+            done: false,
+            failed: false,
+            progress: 0
+        };
         const onMessageFunc = function(event) {
             const data = event.data;
             if (typeof(data) === "number") {
-                this.view.adjustCoachProgressBar(data * 100);
+                prefetch.progress = data;
+                // Only touch the view if the human has already moved and is
+                // actively waiting on this exact prefetch's progress bar.
+                if (this.pendingHumanMove !== null && this.coachPrefetch === prefetch) {
+                    this.view.adjustCoachProgressBar(data * 100);
+                }
             } else {
-                // data is the move the Strong AI recommends for coachGame.
-                this.view.showCoachResult(this.coachGame, this.pendingHumanMove, data);
+                // data is the move the Strong AI recommends for prefetch.game.
+                prefetch.resultMove = data;
+                prefetch.done = true;
+                if (this.pendingHumanMove !== null && this.coachPrefetch === prefetch) {
+                    this.view.showCoachResult(prefetch.game, this.pendingHumanMove, prefetch.resultMove);
+                }
             }
         };
-        this.coachWorker.onmessage = onMessageFunc.bind(this);
-        this.coachWorker.onerror = function(error) {
-            console.log('Coach worker error: ' + error.message + '\n');
-            // If the review fails for any reason, just proceed with the move.
-            this.applyPendingHumanMove();
+        worker.onmessage = onMessageFunc.bind(this);
+        worker.onerror = function(error) {
+            console.log('Coach prefetch worker error: ' + error.message + '\n');
+            prefetch.done = true;
+            prefetch.failed = true;
+            // If the human is already waiting on this exact review, just
+            // proceed with their move rather than leaving them stuck.
+            if (this.pendingHumanMove !== null && this.coachPrefetch === prefetch) {
+                this.applyPendingHumanMove();
+            }
         }.bind(this);
+        this.coachPrefetch = prefetch;
+        worker.postMessage({
+            game: snapshot,
+            numOfMCTSSimulations: COACH_NUM_MCTS_SIMULATIONS,
+            uctConst: this.uctConst,
+            aiDevelopMode: false
+        });
+    }
+
+    // Start the background analysis if — and only if — it's currently the
+    // human's turn and coaching is enabled. Safe to call unconditionally
+    // after any state change (it simply no-ops otherwise).
+    maybeStartCoachPrefetch() {
+        if (this.coachEnabled
+            && !this.aiDevelopMode
+            && this.game !== null
+            && this.game.winner === null
+            && this.game.pawnOfTurn.isHumanPlayer) {
+            this.startCoachPrefetch();
+        }
+    }
+
+    cancelCoachPrefetch() {
+        if (this.coachPrefetch !== null && this.coachPrefetch.worker !== null) {
+            this.coachPrefetch.worker.terminate();
+        }
+        this.coachPrefetch = null;
     }
 
     // Entry point for every move made by the human player (called from the view).
-    // When coaching is enabled, first ask the Strong AI what it would have played,
-    // show the comparison modal, and only proceed once the human clicks "continue".
+    // When coaching is enabled, show what the Strong AI would have played —
+    // reusing the background analysis that was already started as soon as it
+    // became the human's turn — and only proceed once they click "continue".
     humanMove(move) {
         if (!this.coachEnabled
             || this.aiDevelopMode
@@ -91,23 +148,28 @@ class Controller {
             return;
         }
         this.pendingHumanMove = move;
-        this.coachGame = Game.clone(this.game);
-        this.setNewCoachWorker();
-        this.view.showCoachAnalyzing();
-        this.coachWorker.postMessage({
-            game: this.coachGame,
-            numOfMCTSSimulations: COACH_NUM_MCTS_SIMULATIONS,
-            uctConst: this.uctConst,
-            aiDevelopMode: false
-        });
+        // The prefetch should already be running (or finished) for this exact
+        // position; fall back to starting one now in case it's missing for
+        // some reason (e.g. coaching was re-enabled after this turn began).
+        if (this.coachPrefetch === null) {
+            this.startCoachPrefetch();
+        }
+        this.coachGame = this.coachPrefetch.game;
+        if (this.coachPrefetch.done) {
+            if (this.coachPrefetch.failed) {
+                this.applyPendingHumanMove();
+            } else {
+                this.view.showCoachResult(this.coachGame, move, this.coachPrefetch.resultMove);
+            }
+        } else {
+            this.view.showCoachAnalyzing(this.coachPrefetch.progress * 100);
+        }
     }
 
     // Proceed with the human move that was under review (called on "continue").
     applyPendingHumanMove() {
-        if (this.coachWorker !== null) {
-            this.coachWorker.terminate();
-            this.coachWorker = null;
-        }
+        // The prefetch for this position has now been consumed.
+        this.cancelCoachPrefetch();
         const move = this.pendingHumanMove;
         this.pendingHumanMove = null;
         this.coachGame = null;
@@ -119,10 +181,7 @@ class Controller {
 
     // Abort any in-progress review (e.g. when starting a new game or undoing).
     cancelCoaching() {
-        if (this.coachWorker !== null) {
-            this.coachWorker.terminate();
-            this.coachWorker = null;
-        }
+        this.cancelCoachPrefetch();
         this.pendingHumanMove = null;
         this.coachGame = null;
         this.view.hideCoachBox();
@@ -132,6 +191,8 @@ class Controller {
         this.coachEnabled = enabled;
         if (!enabled) {
             this.cancelCoaching();
+        } else {
+            this.maybeStartCoachPrefetch();
         }
     }
 
@@ -155,6 +216,8 @@ class Controller {
         }
         if (!this.aiDevelopMode && !isHumanPlayerFirst) {
             this.aiDo();
+        } else {
+            this.maybeStartCoachPrefetch();
         }
     }
 
@@ -168,6 +231,8 @@ class Controller {
             }
             if (!this.game.pawnOfTurn.isHumanPlayer) {
                 this.aiDo();
+            } else {
+                this.maybeStartCoachPrefetch();
             }
         } else {
             // suppose that pawnMove can not be return false, if make the View perfect.
@@ -193,6 +258,7 @@ class Controller {
         this.gameHistory.push(Game.clone(this.game));
         this.view.game = this.game;
         this.view.render();
+        this.maybeStartCoachPrefetch();
     }
 
     redo() {
@@ -201,6 +267,7 @@ class Controller {
         this.gameHistory.push(Game.clone(this.game));
         this.view.game = this.game;
         this.view.render();
+        this.maybeStartCoachPrefetch();
     }
 
     aiDo() {
