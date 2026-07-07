@@ -66,14 +66,12 @@ body {
 a,
 a:link,
 a:visited {
-    color: #0074cc;
+    color: var(--color-teal-deep);
     text-decoration: none;
 }
-a:hover {
-    color: #0a95ff;
-}
+a:hover,
 a:active {
-    color: #0a95ff;
+    color: var(--color-terracotta);
 }
 .gridcontainer0 {
     display: grid;
