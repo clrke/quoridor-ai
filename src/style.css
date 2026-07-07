@@ -46,15 +46,20 @@ a:active {
 .gridcontainer0 {
     display: grid;
     width: 100%;
-    height: 100vh;
     /*
     * On mobile browsers the address/tool bars overlay the layout, so 100vh
     * is taller than the actually-visible area and pushes the bottom button
     * row (cancel / confirm / coach) partly off-screen. 100dvh (dynamic
     * viewport height) tracks the visible area; kept after 100vh as a
     * progressive-enhancement fallback for browsers that don't support it.
+    * 24px is reserved below for the fixed "about" footer link (see
+    * .about_footer_link) so the two stack in normal flow with no overlap,
+    * instead of the link floating independently via position: fixed at a
+    * literal pixel offset, which was measured to overlap the coach/confirm
+    * row on short viewports (e.g. 375x560).
     */
-    height: 100dvh;
+    height: calc(100vh - 24px);
+    height: calc(100dvh - 24px);
     justify-content: center;
     align-content: center;
     grid-template-rows: calc(3 * var(--font-size)) var(--board-table-side-length) calc(8 * var(--font-size));
@@ -66,7 +71,13 @@ a:active {
     justify-content: center;
     align-content: center;
     grid-template-rows: 1fr;
-    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+    /*
+    * Was 5 columns (3 for restart/undo/redo + a gap + 1 for the about
+    * button). The about button now lives in a small fixed footer link at
+    * the very bottom of the page instead, so only the 3-button left group
+    * remains and the grid no longer needs to reserve space on the right.
+    */
+    grid-template-columns: 1fr 1fr 1fr;
 }
 .gridcontainer2 {
     display: grid;
@@ -276,12 +287,6 @@ div.wall_num {
 .button_container.above.left {
     grid-column: 1 / span 3;
 }
-.button_container.above.right {
-    grid-column-start: 5;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-}
 button.button {
     display: inline-block;
     /*
@@ -342,23 +347,34 @@ button.close {
 .button.aido {
     background-color: rgb(36, 84, 160);
 }
-.button.about {
-    /*
-    * Overrides button.button's full-width/full-height/solid-black styling
-    * (higher specificity here: two classes vs. element+class). The about
-    * button is an info action, not a primary game action, so it should
-    * read as smaller and quieter than restart/undo/redo/confirm/cancel:
-    * shrink-to-fit width, a shorter height, and a neutral outline style
-    * (matching .button.cancel) instead of a solid heavy block.
-    */
-    width: auto;
-    height: calc(2 * var(--font-size) + 16px);
-    padding: 8px 14px;
-    margin: 4px;
-    font-size: var(--font-size);
-    background-color: white;
-    color: var(--color-black);
-    border: 2px solid rgb(85, 85, 85);
+/*
+* The about button used to sit in the top-right corner using the same
+* heavy button styling as the primary game actions. It's just an info
+* link, so it now lives as tiny plain text at the very bottom of the
+* page. Placed in normal flow (not position: fixed) directly after
+* .gridcontainer0, which reserves exactly this much height above via
+* `height: calc(100dvh - 24px)` — the two stack with no overlap on any
+* viewport size, including short ones, instead of a fixed-position link
+* floating independently at a literal pixel offset from the viewport
+* edge regardless of what the grid above it is doing.
+*/
+.about_footer_link {
+    display: block;
+    width: 100%;
+    height: 24px;
+    line-height: 24px;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    color: rgb(130, 130, 130);
+    font-size: calc(0.65 * var(--font-size));
+    text-decoration: underline;
+    text-align: center;
+    cursor: pointer;
+}
+.about_footer_link:hover {
+    color: rgb(90, 90, 90);
 }
 .button.coach_toggle {
     background-color: rgb(120, 82, 173);
