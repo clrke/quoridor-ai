@@ -540,6 +540,33 @@ button.close {
     background-color: var(--color-terracotta);
     transition: width 0.15s linear;
 }
+/*
+* Scoped to this modal's own button row (not the shared
+* .button_container.in_message_box class used by 4 other modals) so it's
+* free to wrap: "Use AI's move instead" is much longer than "continue"
+* and needs its own width rather than sharing button.coach_continue's
+* fixed narrow one (sized for "continue").
+*/
+#coach_button_container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+}
+#coach_use_ai_move {
+    width: auto;
+    padding-left: 16px;
+    padding-right: 16px;
+}
+/*
+* button.coach_continue below sets display: inline-block with specificity
+* (element+class) higher than the generic .hidden utility (plain class),
+* so .hidden alone can't hide this button -- same class of bug fixed
+* earlier for #coach_result. Needs an explicit, higher-specificity override.
+*/
+#coach_use_ai_move.hidden {
+    display: none;
+}
 button.coach_continue {
     display: inline-block;
     height: calc(2 * var(--font-size) + 16px);

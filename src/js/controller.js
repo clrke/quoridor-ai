@@ -179,6 +179,32 @@ class Controller {
         }
     }
 
+    // Proceed with the Strong AI's suggested move instead of the human's own
+    // pending move (called from the coach modal's "use AI's move" button).
+    // The pending human move was only ever stored, never applied to
+    // this.game (humanMove() doesn't mutate game state until
+    // applyPendingHumanMove() calls doMove()) -- but rather than relying on
+    // that invariant, explicitly reset to the exact pre-move snapshot
+    // (coachGame, captured before the human moved) before applying the AI's
+    // move, so the player's move and wall count are guaranteed reverted/
+    // clean regardless of how this is reached.
+    applyCoachSuggestedMove() {
+        if (this.coachPrefetch === null || this.coachGame === null) {
+            return;
+        }
+        const aiMove = this.coachPrefetch.resultMove;
+        const preMoveSnapshot = this.coachGame;
+        this.cancelCoachPrefetch();
+        this.pendingHumanMove = null;
+        this.coachGame = null;
+        this.view.hideCoachBox();
+        if (aiMove !== null) {
+            this.game = Game.clone(preMoveSnapshot);
+            this.view.game = this.game;
+            this.doMove(aiMove);
+        }
+    }
+
     // Abort any in-progress review (e.g. when starting a new game or undoing).
     cancelCoaching() {
         this.cancelCoachPrefetch();

@@ -166,6 +166,12 @@ class View {
                 this.controller.applyPendingHumanMove();
             }).bind(this);
         }
+        const coachUseAiMoveButton = document.getElementById("coach_use_ai_move");
+        if (coachUseAiMoveButton) {
+            coachUseAiMoveButton.onclick = (function(e) {
+                this.controller.applyCoachSuggestedMove();
+            }).bind(this);
+        }
         if (this.htmlCoachToggle) {
             this.htmlCoachToggle.onclick = (function(e) {
                 this.controller.setCoachEnabled(!this.controller.coachEnabled);
@@ -859,6 +865,11 @@ class View {
         if (legendPlayer) legendPlayer.classList.toggle("hidden", same);
         if (legendAi) legendAi.classList.toggle("hidden", same);
         if (legendSame) legendSame.classList.toggle("hidden", !same);
+
+        // Offering "use AI's move instead" is redundant when it's identical
+        // to the player's own move -- hide it in that case.
+        const useAiMoveButton = document.getElementById("coach_use_ai_move");
+        if (useAiMoveButton) useAiMoveButton.classList.toggle("hidden", same);
 
         if (verdict) {
             if (same) {
