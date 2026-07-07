@@ -7,13 +7,13 @@
     --wall-gap: calc(var(--short-length) * 0.25);
     --wall-length: calc(2 * var(--long-length) + var(--short-length) - 2 * var(--wall-gap));
     --wall-width: calc(var(--short-length) - 2 * var(--wall-gap));
-    --font-size: 18px;
+    --font-size: 16px;
     --color-black: #232629;
 }
 /* size of iPad screen is 768px x 1024px in portrait mode */
 @media only screen and (min-width: 768px) and (min-height: 768px) {
     :root {
-        --font-size: 30px;
+        --font-size: 26px;
     }
 }
 @media only screen and (min-width: 768px), (orientation: landscape) {
@@ -284,11 +284,17 @@ div.wall_num {
 }
 button.button {
     display: inline-block;
-    height: calc(3 * var(--font-size));
+    /*
+    * box-sizing: border-box is set globally (html), so padding is carved
+    * out of the box rather than added on top. The +16px keeps the same
+    * text content area as before (padding: 0) while still giving the
+    * button >= 8px of padding on every side.
+    */
+    height: calc(3 * var(--font-size) + 16px);
     width: 100%;
     border: none;
     border-radius: 10px;
-    padding: 0;
+    padding: 8px;
     color: white;
     font-size: calc(var(--font-size) * 1.2);
     text-align: center;
@@ -297,11 +303,11 @@ button.button {
 }
 button.update, button.ai_level, button.close, button.restart_yes_no {
     display: inline-block;
-    height: calc(2 * var(--font-size));
-    width: calc(4 * var(--font-size));
+    height: calc(2 * var(--font-size) + 16px);
+    width: calc(4 * var(--font-size) + 16px);
     border: none;
     margin: 2px;
-    padding: 0;
+    padding: 8px;
     background-color: white;
     color: var(--color-black);
     font-size: var(--font-size);
@@ -310,7 +316,7 @@ button.update, button.ai_level, button.close, button.restart_yes_no {
     border-radius: 10px;
 }
 button.update {
-    height: calc(3 * var(--font-size));
+    height: calc(3 * var(--font-size) + 16px);
     width: 100%;
 }
 button.close {
@@ -449,11 +455,11 @@ button.close {
 }
 button.coach_continue {
     display: inline-block;
-    height: calc(2 * var(--font-size));
-    width: calc(6 * var(--font-size));
+    height: calc(2 * var(--font-size) + 16px);
+    width: calc(6 * var(--font-size) + 16px);
     border: 2px solid rgb(85, 85, 85);
     margin: 2px;
-    padding: 0;
+    padding: 8px;
     background-color: white;
     color: var(--color-black);
     font-size: var(--font-size);
