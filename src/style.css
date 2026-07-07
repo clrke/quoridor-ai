@@ -47,6 +47,14 @@ a:active {
     display: grid;
     width: 100%;
     height: 100vh;
+    /*
+    * On mobile browsers the address/tool bars overlay the layout, so 100vh
+    * is taller than the actually-visible area and pushes the bottom button
+    * row (cancel / confirm / coach) partly off-screen. 100dvh (dynamic
+    * viewport height) tracks the visible area; kept after 100vh as a
+    * progressive-enhancement fallback for browsers that don't support it.
+    */
+    height: 100dvh;
     justify-content: center;
     align-content: center;
     grid-template-rows: calc(3 * var(--font-size)) var(--board-table-side-length) calc(8 * var(--font-size));
@@ -210,8 +218,17 @@ div.wall_num {
 .fade_box.in.about {
     justify-content: flex-start;
     top: 0;
-    height: calc(3 *var(--board-table-side-length));
-    overflow: visible;
+    /*
+    * Previously a fixed height of 3x the board with overflow: visible. On
+    * mobile (smaller font + narrower width => far more text wrapping) that
+    * content overflows the viewport, spilling over the bottom buttons and
+    * leaving the "close" button unreachable. Instead, cap the box to the
+    * board height and let it scroll internally so all content — including
+    * the close button — is always reachable on any screen size.
+    */
+    height: var(--board-table-side-length);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     text-align: left;
 }
 @keyframes fade_in {
@@ -231,7 +248,11 @@ div.wall_num {
     100% {visibility: hidden; z-index: 10; opacity: 0;}
 }
 #about_box {
-    background-color: rgba(255, 255, 255, 0.8);
+    /*
+    * Near-opaque so the board grid and bottom buttons behind it don't bleed
+    * through the wrapped text (very noticeable / unreadable on mobile).
+    */
+    background-color: rgba(255, 255, 255, 0.98);
 }
 #update_notification_message_box {
     background-color:rgba(226, 230, 36, 0.85);
