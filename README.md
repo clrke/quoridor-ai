@@ -17,6 +17,20 @@ The number of rollouts per move for each AI level on the website is following.
 | Good    | 20,000 |
 | Strong  | 60,000 |
 
+## Tests
+
+`src/` ships as plain global `<script>` files with no build step, so tests run against that same source rather than a compiled/bundled copy.
+
+```
+npm install
+npx playwright install chromium   # one-time, for the e2e browser
+npm test                          # unit + e2e
+npm run test:unit                 # fast, pure-Node checks of game.js/ai.js (tests/unit)
+npm run test:e2e                  # real-browser checks of the full app (tests/e2e)
+```
+
+Unit tests load `game.js`/`ai.js` into an isolated V8 context via Node's `vm` module (see `tests/helpers/loadGameModules.js`) instead of adding `module.exports` to the production files, so the tests always run against the exact code the browser loads. E2e tests drive the real app with Playwright and a local static server — used for things that only exist at the DOM/Worker/Service-Worker level (the coach modal, undo/redo, etc.) which pure unit tests can't reach.
+
 ## Some Heuristics Included in the latest version (v0.3)
 * The branching factor of Quoridor is high due to a bunch of possible positions to place a wall. (There are 64 (8x8) possible positions if there is no wall on the board.) So I used a heuristic which only considers "probable" next walls to lower the branching factor. I used this heuristic on the selection/expansion phase and the rollout phase of MCTS. "Probable" next walls are the followings.
     

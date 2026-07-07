@@ -1,2 +1,5 @@
 log/
 .saint-expeditus/
+node_modules/
+playwright-report/
+test-results/
