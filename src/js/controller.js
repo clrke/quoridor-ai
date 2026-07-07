@@ -263,11 +263,36 @@ class Controller {
 
     redo() {
         this.cancelCoaching();
-        this.game = this.gameHistoryTrashCan.pop();
+        this.setNewWorker();
+
+        // Mirror undo()'s "one round" granularity: skip forward through any
+        // cached AI-turn state so one redo() restores exactly what one
+        // undo() reverted, using the exact snapshots already sitting in the
+        // trash can rather than recomputing anything. Bounded by the trash
+        // can's own length so this never pops past empty -- that can happen
+        // when the AI moved first (its opening state is itself a non-human
+        // turn), the same asymmetric shape undo() already has to handle.
+        let game = this.gameHistoryTrashCan.pop();
+        while (game !== undefined && !game.pawnOfTurn.isHumanPlayer && this.gameHistoryTrashCan.length > 0) {
+            this.gameHistory.push(Game.clone(game));
+            game = this.gameHistoryTrashCan.pop();
+        }
+        this.game = game;
         this.gameHistory.push(Game.clone(this.game));
         this.view.game = this.game;
         this.view.render();
-        this.maybeStartCoachPrefetch();
+
+        // If the trash ran out before reaching the human's next decision
+        // point, the redo frontier is exactly an AI-turn state with no
+        // cached move left to restore. Previously this left the game
+        // silently stuck forever (redo() never triggered the AI). Let the
+        // AI actually compute and play its move here, the same way
+        // doMove()/startNewGame() already do for every other AI turn.
+        if (!this.game.pawnOfTurn.isHumanPlayer) {
+            this.aiDo();
+        } else {
+            this.maybeStartCoachPrefetch();
+        }
     }
 
     aiDo() {
