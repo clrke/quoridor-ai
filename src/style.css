@@ -400,21 +400,6 @@ button.close {
 .coach_swatch_same {
     background-color: rgb(30, 100, 220);
 }
-.coach_line {
-    margin: 0.15em 0;
-    line-height: 1.4;
-    font-size: calc(0.85 * var(--font-size));
-}
-.coach_move {
-    font-weight: 900;
-    font-size: calc(0.95 * var(--font-size));
-}
-.coach_move_player {
-    color: rgb(210, 40, 40);
-}
-.coach_move_ai {
-    color: rgb(20, 140, 70);
-}
 .coach_move_same {
     color: rgb(30, 100, 220);
 }

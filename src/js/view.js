@@ -805,15 +805,11 @@ class View {
     }
 
     // Wipe every piece of the previous move-review result: the mini board
-    // SVG, the move descriptions, the verdict text and the legend.
+    // SVG, the verdict text and the legend.
     clearCoachResult() {
         const boardContainer = document.getElementById("coach_board_container");
-        const playerSpan = document.getElementById("coach_player_move");
-        const aiSpan = document.getElementById("coach_ai_move");
         const verdict = document.getElementById("coach_verdict");
-        if (boardContainer) boardContainer.innerHTML = "";
-        if (playerSpan) { playerSpan.textContent = ""; playerSpan.className = "coach_move"; }
-        if (aiSpan) { aiSpan.textContent = ""; aiSpan.className = "coach_move"; }
+        if (boardContainer) { boardContainer.innerHTML = ""; boardContainer.removeAttribute("aria-label"); }
         if (verdict) { verdict.textContent = ""; verdict.className = ""; }
     }
 
@@ -840,8 +836,6 @@ class View {
         this.clearCoachResult();
 
         const boardContainer = document.getElementById("coach_board_container");
-        const playerSpan = document.getElementById("coach_player_move");
-        const aiSpan = document.getElementById("coach_ai_move");
         const verdict = document.getElementById("coach_verdict");
         const legendPlayer = document.getElementById("coach_legend_player");
         const legendAi = document.getElementById("coach_legend_ai");
@@ -850,19 +844,16 @@ class View {
 
         if (boardContainer) {
             boardContainer.innerHTML = coachBuildBoardSVG(game, playerMove, aiMove, same);
+            // The move markers are conveyed visually (color + legend), but keep a
+            // text equivalent as an aria-label for screen reader users.
+            boardContainer.setAttribute("aria-label", same ?
+                "Your move matches the Strong AI's suggestion: " + View.describeMove(playerMove, game) + "." :
+                "Your move: " + View.describeMove(playerMove, game) + ". Strong AI suggests: " + View.describeMove(aiMove, game) + ".");
         }
         if (legendPlayer) legendPlayer.classList.toggle("hidden", same);
         if (legendAi) legendAi.classList.toggle("hidden", same);
         if (legendSame) legendSame.classList.toggle("hidden", !same);
 
-        if (playerSpan) {
-            playerSpan.textContent = View.describeMove(playerMove, game);
-            playerSpan.className = same ? "coach_move coach_move_same" : "coach_move coach_move_player";
-        }
-        if (aiSpan) {
-            aiSpan.textContent = View.describeMove(aiMove, game);
-            aiSpan.className = same ? "coach_move coach_move_same" : "coach_move coach_move_ai";
-        }
         if (verdict) {
             if (same) {
                 verdict.textContent = "Perfect — your move matches the Strong AI's choice!";
