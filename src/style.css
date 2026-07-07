@@ -325,33 +325,103 @@ button.close {
     background-color: rgb(110, 110, 110);
 }
 #coach_message_box {
-    background-color: rgba(25, 28, 40, 0.92);
-    color: white;
+    background-color: rgba(255, 255, 255, 0.98);
+    color: var(--color-black);
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.06) inset;
+    /*
+    * .fade_box (base rule) sets flex-wrap: wrap plus a fixed height sized
+    * for one line of text. This box's content (title + mini board + legend
+    * + move text + button) is taller than that, so instead of clipping or
+    * wrapping into a second flex *column* (which pushed content off to the
+    * side), let the box grow to fit its content: same approach the "about"
+    * box above already uses for its own taller content.
+    */
+    top: 0;
+    height: auto;
+    min-height: calc(9 * var(--long-length));
+    flex-wrap: nowrap;
+    overflow: visible;
+    padding-top: calc(0.6 * var(--font-size));
+    padding-bottom: calc(0.6 * var(--font-size));
 }
 .coach_title {
     font-weight: 900;
     font-size: calc(1.1 * var(--font-size));
 }
+#coach_result {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+/*
+* #coach_result's own ID rule above (display: flex) outranks the generic
+* .hidden class rule by specificity, so it must be overridden explicitly
+* here whenever "hidden" is toggled on, or the result panel would stay
+* visible underneath the "analyzing" panel.
+*/
+#coach_result.hidden {
+    display: none;
+}
+#coach_board_container {
+    width: min(55%, calc(5 * var(--long-length)));
+    margin: 0.4em auto;
+}
+#coach_board_container svg {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+#coach_legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.2em 0.8em;
+    font-size: calc(0.75 * var(--font-size));
+    margin-bottom: 0.3em;
+}
+.coach_legend_item {
+    display: inline-flex;
+    align-items: center;
+}
+.coach_swatch {
+    display: inline-block;
+    width: calc(0.6 * var(--font-size));
+    height: calc(0.6 * var(--font-size));
+    border-radius: 50%;
+    margin-right: 0.3em;
+}
+.coach_swatch_player {
+    background-color: rgb(210, 40, 40);
+}
+.coach_swatch_ai {
+    background-color: rgb(20, 140, 70);
+}
+.coach_swatch_same {
+    background-color: rgb(30, 100, 220);
+}
 .coach_line {
-    margin: 0.3em 0;
-    line-height: 1.5;
+    margin: 0.15em 0;
+    line-height: 1.4;
+    font-size: calc(0.85 * var(--font-size));
 }
 .coach_move {
     font-weight: 900;
-    font-size: calc(1.15 * var(--font-size));
+    font-size: calc(0.95 * var(--font-size));
 }
 .coach_move_player {
-    color: rgb(255, 82, 82);
+    color: rgb(210, 40, 40);
 }
 .coach_move_ai {
-    color: rgb(76, 200, 100);
+    color: rgb(20, 140, 70);
 }
 .coach_move_same {
-    color: rgb(79, 150, 255);
+    color: rgb(30, 100, 220);
 }
 #coach_verdict {
-    margin-top: 0.4em;
-    font-size: calc(0.9 * var(--font-size));
+    margin-top: 0.3em;
+    font-size: calc(0.85 * var(--font-size));
+    font-weight: 700;
 }
 #coach_progress_bar_container {
     position: relative;
@@ -359,7 +429,7 @@ button.close {
     height: calc(0.9 * var(--font-size));
     margin: 0.6em auto 0 auto;
     border-radius: 10px;
-    background-color: rgba(255, 255, 255, 0.25);
+    background-color: rgba(0, 0, 0, 0.1);
     overflow: hidden;
 }
 #coach_progress_bar {
@@ -375,7 +445,7 @@ button.coach_continue {
     display: inline-block;
     height: calc(2 * var(--font-size));
     width: calc(6 * var(--font-size));
-    border: none;
+    border: 2px solid rgb(85, 85, 85);
     margin: 2px;
     padding: 0;
     background-color: white;
@@ -416,6 +486,15 @@ div.pawn.clicked {
     opacity: 0.7;
 }
 .fade_box.in.hidden, button.button.hidden, input.hidden {
+    display: none;
+}
+/*
+* Generic hidden utility, for elements that are not one of the specific
+* combinations above (e.g. the coach modal's internal analyzing/result
+* panels and legend items). Lower specificity than the rules above and
+* below, so it never overrides their more specific hide behavior.
+*/
+.hidden {
     display: none;
 }
 .button:disabled {

@@ -1,6 +1,137 @@
 "use strict";
 
 /*
+* Mini board renderer for the move-review coach modal.
+*
+* Draws a small, self-contained SVG snapshot of the board (walls + pawns,
+* as they were right before the human's pending move), with the human's
+* move and the Strong AI's recommended move overlaid as colored markers
+* (a dashed line + ring for pawn moves, a colored bar for wall placements).
+* If both moves are identical, only a single blue "same" marker is drawn.
+*
+* Sizes below are plain SVG user units (not tied to the main board's CSS
+* variables) so this can be generated as a plain string, independent of
+* the live board's DOM/layout.
+*/
+const COACH_BOARD = {
+    longLen: 36,   // size of a pawn cell (square)
+    shortLen: 12,  // size of the gap between cells where walls sit
+};
+COACH_BOARD.step = COACH_BOARD.longLen + COACH_BOARD.shortLen;
+COACH_BOARD.wallGap = COACH_BOARD.shortLen * 0.25;
+COACH_BOARD.wallWidth = COACH_BOARD.shortLen - 2 * COACH_BOARD.wallGap;
+COACH_BOARD.wallLength = 2 * COACH_BOARD.longLen + COACH_BOARD.shortLen - 2 * COACH_BOARD.wallGap;
+COACH_BOARD.size = 9 * COACH_BOARD.longLen + 8 * COACH_BOARD.shortLen;
+
+const COACH_COLOR = {
+    boardBg: "rgb(68, 117, 221)",
+    cellBg: "rgb(207, 207, 207)",
+    wall: "rgb(202, 168, 106)",
+    pawn0: "rgb(195, 164, 23)",
+    pawn1: "rgb(51, 25, 25)",
+    player: "rgb(210, 40, 40)",
+    ai: "rgb(20, 140, 70)",
+    same: "rgb(30, 100, 220)"
+};
+
+function coachCellX(col) {
+    return col * COACH_BOARD.step;
+}
+function coachCellY(row) {
+    return row * COACH_BOARD.step;
+}
+function coachCellCenter(row, col) {
+    return { x: coachCellX(col) + COACH_BOARD.longLen / 2, y: coachCellY(row) + COACH_BOARD.longLen / 2 };
+}
+function coachHorizontalWallRect(row, col) {
+    return {
+        x: coachCellX(col) + COACH_BOARD.wallGap,
+        y: coachCellY(row) + COACH_BOARD.longLen + COACH_BOARD.wallGap,
+        width: COACH_BOARD.wallLength,
+        height: COACH_BOARD.wallWidth
+    };
+}
+function coachVerticalWallRect(row, col) {
+    return {
+        x: coachCellX(col) + COACH_BOARD.longLen + COACH_BOARD.wallGap,
+        y: coachCellY(row) + COACH_BOARD.wallGap,
+        width: COACH_BOARD.wallWidth,
+        height: COACH_BOARD.wallLength
+    };
+}
+
+// Build the SVG markup overlaying a single move (pawn move or wall placement)
+// in the given color. originCenter is the moving pawn's current position,
+// used as the start point for the pawn-move indicator line.
+function coachBuildMoveOverlay(move, color, originCenter) {
+    if (!move) {
+        return "";
+    }
+    if (move[0]) {
+        const dest = coachCellCenter(move[0][0], move[0][1]);
+        const ringR = COACH_BOARD.longLen * 0.42;
+        return (
+            '<line x1="' + originCenter.x + '" y1="' + originCenter.y + '" x2="' + dest.x + '" y2="' + dest.y +
+            '" stroke="' + color + '" stroke-width="3.5" stroke-dasharray="6,5" stroke-linecap="round" opacity="0.95" />' +
+            '<circle cx="' + dest.x + '" cy="' + dest.y + '" r="' + ringR + '" fill="none" stroke="' + color + '" stroke-width="4" />'
+        );
+    } else if (move[1]) {
+        const r = coachHorizontalWallRect(move[1][0], move[1][1]);
+        return '<rect x="' + r.x + '" y="' + r.y + '" width="' + r.width + '" height="' + r.height + '" fill="' + color + '" rx="2" />';
+    } else if (move[2]) {
+        const r = coachVerticalWallRect(move[2][0], move[2][1]);
+        return '<rect x="' + r.x + '" y="' + r.y + '" width="' + r.width + '" height="' + r.height + '" fill="' + color + '" rx="2" />';
+    }
+    return "";
+}
+
+// Build a full SVG snapshot of the board (as it was right before the pending
+// human move), with the human's move and the Strong AI's recommended move
+// overlaid. `same` collapses both overlays into a single blue marker.
+function coachBuildBoardSVG(game, playerMove, aiMove, same) {
+    const B = COACH_BOARD;
+    const C = COACH_COLOR;
+    const size = B.size;
+    let svg = '<rect x="0" y="0" width="' + size + '" height="' + size + '" rx="' + (size * 0.02) + '" fill="' + C.boardBg + '" />';
+
+    for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
+            svg += '<rect x="' + coachCellX(c) + '" y="' + coachCellY(r) + '" width="' + B.longLen + '" height="' + B.longLen +
+                '" rx="' + (B.longLen * 0.05) + '" fill="' + C.cellBg + '" />';
+        }
+    }
+
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            if (game.board.walls.horizontal[r][c]) {
+                const wr = coachHorizontalWallRect(r, c);
+                svg += '<rect x="' + wr.x + '" y="' + wr.y + '" width="' + wr.width + '" height="' + wr.height + '" fill="' + C.wall + '" />';
+            }
+            if (game.board.walls.vertical[r][c]) {
+                const wr = coachVerticalWallRect(r, c);
+                svg += '<rect x="' + wr.x + '" y="' + wr.y + '" width="' + wr.width + '" height="' + wr.height + '" fill="' + C.wall + '" />';
+            }
+        }
+    }
+
+    const pawnR = B.longLen * 0.35;
+    const p0 = coachCellCenter(game.board.pawns[0].position.row, game.board.pawns[0].position.col);
+    const p1 = coachCellCenter(game.board.pawns[1].position.row, game.board.pawns[1].position.col);
+    svg += '<circle cx="' + p0.x + '" cy="' + p0.y + '" r="' + pawnR + '" fill="' + C.pawn0 + '" stroke="white" stroke-width="1.5" />';
+    svg += '<circle cx="' + p1.x + '" cy="' + p1.y + '" r="' + pawnR + '" fill="' + C.pawn1 + '" stroke="white" stroke-width="1.5" />';
+
+    const origin = coachCellCenter(game.pawnOfTurn.position.row, game.pawnOfTurn.position.col);
+    if (same) {
+        svg += coachBuildMoveOverlay(aiMove, C.same, origin);
+    } else {
+        svg += coachBuildMoveOverlay(playerMove, C.player, origin);
+        svg += coachBuildMoveOverlay(aiMove, C.ai, origin);
+    }
+
+    return '<svg viewBox="0 0 ' + size + ' ' + size + '" xmlns="http://www.w3.org/2000/svg">' + svg + '</svg>';
+}
+
+/*
 * View part in the MVC pattern
 */
 class View {
@@ -659,15 +790,31 @@ class View {
     }
 
     // Show the coach modal in its "analyzing" state while the Strong AI thinks.
+    // Clears out the previous move's board/text/legend right away so none of
+    // it can remain visible (even briefly) while the new move is reviewed.
     showCoachAnalyzing() {
         const result = document.getElementById("coach_result");
         const analyzing = document.getElementById("coach_analyzing");
+        this.clearCoachResult();
         if (result) result.classList.add("hidden");
         if (analyzing) analyzing.classList.remove("hidden");
         this.adjustCoachProgressBar(0);
         if (this.htmlCoachMessageBox) {
             this.htmlCoachMessageBox.classList.remove("hidden");
         }
+    }
+
+    // Wipe every piece of the previous move-review result: the mini board
+    // SVG, the move descriptions, the verdict text and the legend.
+    clearCoachResult() {
+        const boardContainer = document.getElementById("coach_board_container");
+        const playerSpan = document.getElementById("coach_player_move");
+        const aiSpan = document.getElementById("coach_ai_move");
+        const verdict = document.getElementById("coach_verdict");
+        if (boardContainer) boardContainer.innerHTML = "";
+        if (playerSpan) { playerSpan.textContent = ""; playerSpan.className = "coach_move"; }
+        if (aiSpan) { aiSpan.textContent = ""; aiSpan.className = "coach_move"; }
+        if (verdict) { verdict.textContent = ""; verdict.className = ""; }
     }
 
     adjustCoachProgressBar(percentage) {
@@ -681,15 +828,32 @@ class View {
         if (this.htmlCoachMessageBox) {
             this.htmlCoachMessageBox.classList.add("hidden");
         }
+        this.clearCoachResult();
     }
 
     // Display the comparison between the human's move (red) and the
-    // Strong AI's recommended move (green). If they are identical, show blue.
+    // Strong AI's recommended move (green), rendered directly on a mini
+    // board snapshot. If both moves are identical, show a single blue marker.
     showCoachResult(game, playerMove, aiMove) {
+        // Always start from a clean slate so nothing from a previous
+        // move-review can linger underneath the new one.
+        this.clearCoachResult();
+
+        const boardContainer = document.getElementById("coach_board_container");
         const playerSpan = document.getElementById("coach_player_move");
         const aiSpan = document.getElementById("coach_ai_move");
         const verdict = document.getElementById("coach_verdict");
+        const legendPlayer = document.getElementById("coach_legend_player");
+        const legendAi = document.getElementById("coach_legend_ai");
+        const legendSame = document.getElementById("coach_legend_same");
         const same = View.movesEqual(playerMove, aiMove);
+
+        if (boardContainer) {
+            boardContainer.innerHTML = coachBuildBoardSVG(game, playerMove, aiMove, same);
+        }
+        if (legendPlayer) legendPlayer.classList.toggle("hidden", same);
+        if (legendAi) legendAi.classList.toggle("hidden", same);
+        if (legendSame) legendSame.classList.toggle("hidden", !same);
 
         if (playerSpan) {
             playerSpan.textContent = View.describeMove(playerMove, game);
