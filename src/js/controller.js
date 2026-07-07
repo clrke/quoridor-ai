@@ -17,16 +17,19 @@ class Controller {
         this.game = null;
         this.gameHistory = null;
         this.gameHistoryTrashCan = null;  // For Redo
-        this.view = new View(this, this.aiDevelopMode);
         this.worker = null;
         this.numOfMCTSSimulations = null;
         this.uctConst = uctConst;
 
         // Move-review coach: after every human move, the Strong AI reviews it.
+        // This must be set before the View is constructed, since the View
+        // reads this.coachEnabled synchronously to label the toggle button.
         this.coachEnabled = !aiDevelopMode;
         this.coachWorker = null;
         this.pendingHumanMove = null;
         this.coachGame = null;  // snapshot of the game just before the pending human move
+
+        this.view = new View(this, this.aiDevelopMode);
     }
 
     setNewWorker() {
