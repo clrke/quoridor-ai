@@ -31,7 +31,7 @@ const COACH_COLOR = {
     pawn1: "rgb(51, 25, 25)",
     player: "rgb(210, 40, 40)",
     ai: "rgb(52, 199, 89)",
-    same: "rgb(30, 100, 220)"
+    same: "rgb(41, 150, 244)"
 };
 
 function coachCellX(col) {
