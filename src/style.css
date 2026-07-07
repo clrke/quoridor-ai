@@ -343,7 +343,22 @@ button.close {
     background-color: rgb(36, 84, 160);
 }
 .button.about {
-    background-color: rgb(50, 50, 50);
+    /*
+    * Overrides button.button's full-width/full-height/solid-black styling
+    * (higher specificity here: two classes vs. element+class). The about
+    * button is an info action, not a primary game action, so it should
+    * read as smaller and quieter than restart/undo/redo/confirm/cancel:
+    * shrink-to-fit width, a shorter height, and a neutral outline style
+    * (matching .button.cancel) instead of a solid heavy block.
+    */
+    width: auto;
+    height: calc(2 * var(--font-size) + 16px);
+    padding: 8px 14px;
+    margin: 4px;
+    font-size: var(--font-size);
+    background-color: white;
+    color: var(--color-black);
+    border: 2px solid rgb(85, 85, 85);
 }
 .button.coach_toggle {
     background-color: rgb(120, 82, 173);
