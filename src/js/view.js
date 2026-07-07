@@ -23,12 +23,16 @@ COACH_BOARD.wallWidth = COACH_BOARD.shortLen - 2 * COACH_BOARD.wallGap;
 COACH_BOARD.wallLength = 2 * COACH_BOARD.longLen + COACH_BOARD.shortLen - 2 * COACH_BOARD.wallGap;
 COACH_BOARD.size = 9 * COACH_BOARD.longLen + 8 * COACH_BOARD.shortLen;
 
+// Kept in sync with style.css's Bali-inspired palette (--color-board-bg,
+// --color-sand, --color-teak, --color-gold, --color-espresso). The last
+// three (player/ai/same) are semantic move-review indicators tuned earlier
+// for contrast/clarity, not decorative, so they're intentionally left as-is.
 const COACH_COLOR = {
-    boardBg: "rgb(68, 117, 221)",
-    cellBg: "rgb(207, 207, 207)",
-    wall: "rgb(202, 168, 106)",
-    pawn0: "rgb(195, 164, 23)",
-    pawn1: "rgb(51, 25, 25)",
+    boardBg: "rgb(85, 101, 74)",
+    cellBg: "rgb(231, 220, 195)",
+    wall: "rgb(192, 138, 82)",
+    pawn0: "rgb(201, 162, 39)",
+    pawn1: "rgb(59, 42, 32)",
     player: "rgb(210, 40, 40)",
     ai: "rgb(52, 199, 89)",
     same: "rgb(41, 150, 244)"

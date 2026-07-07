@@ -9,6 +9,37 @@
     --wall-width: calc(var(--short-length) - 2 * var(--wall-gap));
     --font-size: 16px;
     --color-black: #232629;
+
+    /*
+    * Bali-inspired earthy palette: rice-terrace green board, sandy cell
+    * tones, warm teak walls, brass/espresso pawns, and terracotta/olive/
+    * clay accent buttons instead of the previous bright blue/purple UI.
+    * Kept as named tokens (rather than inlining hex everywhere) so the
+    * whole theme can be retuned from one place.
+    */
+    --color-cream: #F6F0E4;
+    --color-cream-translucent: rgba(246, 240, 228, 0.98);
+    --color-sand: #E7DCC3;
+    --color-board-bg: #55654A;
+    --color-teak: #C08A52;
+    --color-gold: #C9A227;
+    --color-espresso: #3B2A20;
+    --color-charcoal: #2E241C;
+    --color-terracotta: #B5603D;
+    --color-terracotta-translucent: rgba(181, 96, 61, 0.92);
+    --color-olive: #74875A;
+    --color-teal-deep: #3F6659;
+    --color-ochre: #A6782E;
+    --color-clay: #8B5E44;
+    --color-wine: #7C4A3D;
+    --color-stone: #8A8175;
+    --color-amber: #D9A441;
+    --color-amber-translucent: rgba(217, 164, 65, 0.9);
+    --color-rust-translucent: rgba(156, 74, 60, 0.85);
+
+    --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --radius: 12px;
+    --button-transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease, filter 0.15s ease;
 }
 /* size of iPad screen is 768px x 1024px in portrait mode */
 @media only screen and (min-width: 768px) and (min-height: 768px) {
@@ -28,8 +59,9 @@ html {
     box-sizing: inherit;
 }
 body {
-    font-family: Arial, Helvetica, sans-serif;
-    color: var(--color-black);
+    font-family: var(--font-family);
+    color: var(--color-charcoal);
+    background-color: var(--color-cream);
 }
 a,
 a:link,
@@ -88,6 +120,8 @@ a:active {
 }
 h1 {
     font-size: calc(1.2 * var(--font-size));
+    font-weight: 800;
+    letter-spacing: -0.01em;
 }
 #board_table_container {
     position: relative;
@@ -95,13 +129,14 @@ h1 {
 }
 table {
     table-layout: fixed;
-    border-radius: 0.5%;            
-    background-color: rgb(68, 117, 221);
+    border-radius: 4%;
+    background-color: var(--color-board-bg);
     border-collapse: collapse;
     text-align: center;
     width: var(--board-table-side-length);
     height: var(--board-table-side-length);
     padding:0;
+    box-shadow: 0 4px 14px rgba(46, 36, 28, 0.25);
 }
 td {
     position: relative;
@@ -120,7 +155,7 @@ td.between_cols {
     width: var(--short-length);
 }
 tr.row td.col {
-    background-color: rgb(207, 207, 207);
+    background-color: var(--color-sand);
     border-radius: 5%;
 }
 div.pawn {
@@ -129,19 +164,22 @@ div.pawn {
     height: calc(var(--long-length) * 0.7);
     border-radius: 50%;
     vertical-align: middle;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 div.pawn.pawn0 {
-    background-color: rgb(195, 164, 23);
+    background-color: var(--color-gold);
 }
 div.pawn.pawn1 {
-    background-color: rgb(51, 25, 25);
+    background-color: var(--color-espresso);
 }
 div.horizontal_wall, div.vertical_wall {
     display: inline-block;
     position: absolute;
     left: var(--wall-gap);
     top: var(--wall-gap);
-    background-color: rgb(202, 168, 106);
+    background-color: var(--color-teak);
+    border-radius: 3px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
 }
 div.horizontal_wall {
     width: var(--wall-length);
@@ -263,16 +301,18 @@ div.wall_num {
     * Near-opaque so the board grid and bottom buttons behind it don't bleed
     * through the wrapped text (very noticeable / unreadable on mobile).
     */
-    background-color: rgba(255, 255, 255, 0.98);
+    background-color: var(--color-cream-translucent);
 }
 #update_notification_message_box {
-    background-color:rgba(226, 230, 36, 0.85);
+    background-color: var(--color-amber-translucent);
 }
 #choose_ai_level_message_box, #choose_pawn_message_box, #restart_message_box, #game_result_message_box, button.restart {
-    background-color:rgba(0, 81, 255, 0.85);
+    background-color: var(--color-terracotta-translucent);
+    color: white;
 }
 #note_message_box{
-    background-color:rgba(255, 0, 0, 0.8);
+    background-color: var(--color-rust-translucent);
+    color: white;
     animation-duration: 3s;
 }
 #game_result_message_box{
@@ -283,6 +323,7 @@ div.wall_num {
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 8px;
 }
 .button_container.above.left {
     grid-column: 1 / span 3;
@@ -298,13 +339,18 @@ button.button {
     height: calc(3 * var(--font-size) + 16px);
     width: 100%;
     border: none;
-    border-radius: 10px;
+    border-radius: var(--radius);
     padding: 8px;
     color: white;
+    font-family: var(--font-family);
     font-size: calc(var(--font-size) * 1.2);
+    font-weight: 600;
+    letter-spacing: 0.01em;
     text-align: center;
     text-decoration: none;
-    margin: 2%;
+    margin: 0;
+    box-shadow: 0 2px 5px rgba(46, 36, 28, 0.2);
+    transition: var(--button-transition);
 }
 button.update, button.ai_level, button.close, button.restart_yes_no {
     display: inline-block;
@@ -313,39 +359,44 @@ button.update, button.ai_level, button.close, button.restart_yes_no {
     border: none;
     margin: 2px;
     padding: 8px;
-    background-color: white;
-    color: var(--color-black);
+    background-color: var(--color-cream);
+    color: var(--color-charcoal);
+    font-family: var(--font-family);
     font-size: var(--font-size);
+    font-weight: 600;
     text-align: center;
     text-decoration: none;
-    border-radius: 10px;
+    border-radius: var(--radius);
+    box-shadow: 0 2px 5px rgba(46, 36, 28, 0.2);
+    transition: var(--button-transition);
 }
 button.update {
     height: calc(3 * var(--font-size) + 16px);
     width: 100%;
 }
 button.close {
-    background-color: rgb(50, 50, 50);
+    background-color: var(--color-espresso);
     color: white;
     display: block;
     margin: 0 auto;
 }
 .button.cancel {
-    background-color: white;
-    color: var(--color-black);
-    border: 2px solid rgb(85, 85, 85);
+    background-color: var(--color-cream);
+    color: var(--color-charcoal);
+    border: 2px solid var(--color-stone);
+    box-shadow: none;
 }
 .button.confirm {
-    background-color: rgb(0, 71, 186);
+    background-color: var(--color-ochre);
 }
 .button.undo {
-    background-color: rgb(36, 160, 112);
+    background-color: var(--color-olive);
 }
 .button.redo {
-    background-color: rgb(36, 131, 160);
+    background-color: var(--color-teal-deep);
 }
 .button.aido {
-    background-color: rgb(36, 84, 160);
+    background-color: var(--color-clay);
 }
 /*
 * The about button used to sit in the top-right corner using the same
@@ -367,24 +418,25 @@ button.close {
     padding: 0;
     border: none;
     background: none;
-    color: rgb(130, 130, 130);
+    color: var(--color-stone);
+    font-family: var(--font-family);
     font-size: calc(0.65 * var(--font-size));
     text-decoration: underline;
     text-align: center;
     cursor: pointer;
 }
 .about_footer_link:hover {
-    color: rgb(90, 90, 90);
+    color: var(--color-charcoal);
 }
 .button.coach_toggle {
-    background-color: rgb(120, 82, 173);
+    background-color: var(--color-wine);
 }
 .button.coach_toggle.off {
-    background-color: rgb(110, 110, 110);
+    background-color: var(--color-stone);
 }
 #coach_message_box {
-    background-color: rgba(255, 255, 255, 0.98);
-    color: var(--color-black);
+    background-color: var(--color-cream-translucent);
+    color: var(--color-charcoal);
     box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.06) inset;
     /*
     * .fade_box (base rule) sets flex-wrap: wrap plus a fixed height sized
@@ -449,6 +501,12 @@ button.close {
     border-radius: 50%;
     margin-right: 0.3em;
 }
+/*
+* These three colors are semantic (player move / Strong AI's suggested
+* move / the two matching), tuned earlier for contrast against the mini
+* board's own colors — kept as-is rather than reworked into the Bali
+* palette so the move-review coach's meaning stays unambiguous.
+*/
 .coach_swatch_player {
     background-color: rgb(210, 40, 40);
 }
@@ -481,22 +539,25 @@ button.close {
     left: 0;
     height: 100%;
     width: 0%;
-    background-color: rgb(82, 153, 247);
+    background-color: var(--color-terracotta);
     transition: width 0.15s linear;
 }
 button.coach_continue {
     display: inline-block;
     height: calc(2 * var(--font-size) + 16px);
     width: calc(6 * var(--font-size) + 16px);
-    border: 2px solid rgb(85, 85, 85);
+    border: 2px solid var(--color-stone);
     margin: 2px;
     padding: 8px;
-    background-color: white;
-    color: var(--color-black);
+    background-color: var(--color-cream);
+    color: var(--color-charcoal);
+    font-family: var(--font-family);
     font-size: var(--font-size);
+    font-weight: 600;
     text-align: center;
     text-decoration: none;
-    border-radius: 10px;
+    border-radius: var(--radius);
+    transition: var(--button-transition);
 }
 #message_box {
     position: relative;
@@ -514,7 +575,8 @@ button.coach_continue {
     left: 0;
     /*width: width is set on style property of progress_bar element;*/
     height: 70%;
-    background-color: rgb(82, 153, 247);
+    background-color: var(--color-terracotta);
+    opacity: 0.5;
 }
 span.no_wrap {
     white-space: nowrap;
@@ -599,5 +661,16 @@ p.release_date, p.last_updated {
     div.pawn.button:hover, button.ai_level:hover, button.restart_yes_no:hover, button.update:hover {
         opacity: 1;
     }
+    button.button:hover {
+        filter: brightness(1.08);
+        box-shadow: 0 3px 8px rgba(46, 36, 28, 0.28);
+    }
+    button.ai_level:hover, button.restart_yes_no:hover, button.update:hover, button.coach_continue:hover {
+        box-shadow: 0 3px 8px rgba(46, 36, 28, 0.28);
+    }
 }
- 
+button.button:active,
+button.ai_level:active, button.restart_yes_no:active, button.update:active, button.coach_continue:active {
+    transform: translateY(1px);
+    box-shadow: 0 1px 2px rgba(46, 36, 28, 0.18);
+}

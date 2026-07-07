@@ -9,7 +9,7 @@
 * https://developers.google.com/web/fundamentals/primers/service-workers/
 */
 
-const CACHE_NAME = 'quoridor-ai-cache-v0.5.2';
+const CACHE_NAME = 'quoridor-ai-cache-v0.6.0';
 const urlsToCache = [
     './',
     './style.css',
