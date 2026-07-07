@@ -30,7 +30,7 @@ const COACH_COLOR = {
     pawn0: "rgb(195, 164, 23)",
     pawn1: "rgb(51, 25, 25)",
     player: "rgb(210, 40, 40)",
-    ai: "rgb(20, 140, 70)",
+    ai: "rgb(52, 199, 89)",
     same: "rgb(30, 100, 220)"
 };
 
