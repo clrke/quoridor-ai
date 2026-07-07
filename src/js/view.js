@@ -21,6 +21,23 @@ class View {
         this.htmlChooseAILevelMessageBox = document.getElementById("choose_ai_level_message_box");
         this.htmlChoosePawnMessageBox = document.getElementById("choose_pawn_message_box");
         this.htmlRestartMessageBox = document.getElementById("restart_message_box");
+
+        // Move-review coach modal elements
+        this.htmlCoachMessageBox = document.getElementById("coach_message_box");
+        this.htmlCoachToggle = document.getElementById("coach_toggle");
+        const coachContinueButton = document.getElementById("coach_continue");
+        if (coachContinueButton) {
+            coachContinueButton.onclick = (function(e) {
+                this.controller.applyPendingHumanMove();
+            }).bind(this);
+        }
+        if (this.htmlCoachToggle) {
+            this.htmlCoachToggle.onclick = (function(e) {
+                this.controller.setCoachEnabled(!this.controller.coachEnabled);
+                this.updateCoachToggleLabel();
+            }).bind(this);
+            this.updateCoachToggleLabel();
+        }
         
         // for choosing AI level
         const aiLevelButton = {
@@ -234,7 +251,7 @@ class View {
                 const row = clickedPawn.parentElement.parentElement.rowIndex / 2;
                 const col = clickedPawn.parentElement.cellIndex / 2;
                 View.cancelPawnClick();
-                this.controller.doMove([[row, col], null, null]);
+                this.submitMove([[row, col], null, null]);
             } else {
                 const horizontalWallShadows = document.getElementsByClassName("horizontal_wall shadow");
                 const verticalWallShadows = document.getElementsByClassName("vertical_wall shadow");
@@ -243,13 +260,13 @@ class View {
                     const row = (horizontalWallShadow.parentElement.parentElement.rowIndex - 1) / 2;
                     const col = horizontalWallShadow.parentElement.cellIndex / 2;
                     View.cancelWallShadows();
-                    this.controller.doMove([null, [row, col], null]);
+                    this.submitMove([null, [row, col], null]);
                 } else if (verticalWallShadows.length > 0) {
                     const verticalWallShadow = verticalWallShadows[0];
                     const row = verticalWallShadow.parentElement.parentElement.rowIndex / 2;
                     const col = (verticalWallShadow.parentElement.cellIndex - 1) / 2;
                     View.cancelWallShadows();
-                    this.controller.doMove([null, null, [row, col]]);
+                    this.submitMove([null, null, [row, col]]);
                 }
             }
         };
@@ -375,7 +392,7 @@ class View {
                 const x = e.target;
                 const row = x.parentElement.parentElement.rowIndex / 2;
                 const col = x.parentElement.cellIndex / 2;
-                this.controller.doMove([[row, col], null, null]);
+                this.submitMove([[row, col], null, null]);
             };
         } else {
             onclickNextPawnPosition = function(e) {
@@ -440,14 +457,14 @@ class View {
                 View.horizontalWallShadow(x, false);
                 const row = (x.parentElement.rowIndex - 1) / 2;
                 const col = x.cellIndex / 2;
-                this.controller.doMove([null, [row, col], null]);
+                this.submitMove([null, [row, col], null]);
             };
             onclickNextVerticalWall = function(e) {
                 const x = e.currentTarget;
                 View.verticalWallShadow(x, false);
                 const row = x.parentElement.rowIndex / 2;
                 const col = (x.cellIndex - 1) / 2;
-                this.controller.doMove([null, null, [row, col]]);
+                this.submitMove([null, null, [row, col]]);
             };
         } else {
             onclickNextHorizontalWall = function(e) {
@@ -620,6 +637,138 @@ class View {
         for (let i = 0; i < previousWalls.length; i++) {
             previousWalls[i].remove();
         }
+    }
+
+    // Send a move made by the human player through the controller.
+    // Routed via humanMove so the Strong-AI move-review coach can intercept it.
+    submitMove(move) {
+        if (typeof this.controller.humanMove === "function") {
+            this.controller.humanMove(move);
+        } else {
+            this.controller.doMove(move);
+        }
+    }
+
+    updateCoachToggleLabel() {
+        if (!this.htmlCoachToggle) {
+            return;
+        }
+        const on = !!(this.controller && this.controller.coachEnabled);
+        this.htmlCoachToggle.textContent = on ? "coach: on" : "coach: off";
+        this.htmlCoachToggle.classList.toggle("off", !on);
+    }
+
+    // Show the coach modal in its "analyzing" state while the Strong AI thinks.
+    showCoachAnalyzing() {
+        const result = document.getElementById("coach_result");
+        const analyzing = document.getElementById("coach_analyzing");
+        if (result) result.classList.add("hidden");
+        if (analyzing) analyzing.classList.remove("hidden");
+        this.adjustCoachProgressBar(0);
+        if (this.htmlCoachMessageBox) {
+            this.htmlCoachMessageBox.classList.remove("hidden");
+        }
+    }
+
+    adjustCoachProgressBar(percentage) {
+        const bar = document.getElementById("coach_progress_bar");
+        if (bar) {
+            bar.style.width = Math.round(percentage) + "%";
+        }
+    }
+
+    hideCoachBox() {
+        if (this.htmlCoachMessageBox) {
+            this.htmlCoachMessageBox.classList.add("hidden");
+        }
+    }
+
+    // Display the comparison between the human's move (red) and the
+    // Strong AI's recommended move (green). If they are identical, show blue.
+    showCoachResult(game, playerMove, aiMove) {
+        const playerSpan = document.getElementById("coach_player_move");
+        const aiSpan = document.getElementById("coach_ai_move");
+        const verdict = document.getElementById("coach_verdict");
+        const same = View.movesEqual(playerMove, aiMove);
+
+        if (playerSpan) {
+            playerSpan.textContent = View.describeMove(playerMove, game);
+            playerSpan.className = same ? "coach_move coach_move_same" : "coach_move coach_move_player";
+        }
+        if (aiSpan) {
+            aiSpan.textContent = View.describeMove(aiMove, game);
+            aiSpan.className = same ? "coach_move coach_move_same" : "coach_move coach_move_ai";
+        }
+        if (verdict) {
+            if (same) {
+                verdict.textContent = "Perfect — your move matches the Strong AI's choice!";
+                verdict.className = "coach_move_same";
+            } else {
+                verdict.textContent = "The Strong AI would have played a different move.";
+                verdict.className = "";
+            }
+        }
+
+        const analyzing = document.getElementById("coach_analyzing");
+        const result = document.getElementById("coach_result");
+        if (analyzing) analyzing.classList.add("hidden");
+        if (result) result.classList.remove("hidden");
+        if (this.htmlCoachMessageBox) {
+            this.htmlCoachMessageBox.classList.remove("hidden");
+        }
+    }
+
+    // Whether two moves (each [pawnMove, horizontalWall, verticalWall]) are the same.
+    static movesEqual(moveA, moveB) {
+        if (!moveA || !moveB) {
+            return false;
+        }
+        for (let i = 0; i < 3; i++) {
+            const a = moveA[i];
+            const b = moveB[i];
+            if (!a && !b) {
+                continue;
+            }
+            if (!a || !b || a[0] !== b[0] || a[1] !== b[1]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Build a short human-readable description of a move.
+    // Board coordinates are shown in file(a-i)/rank(1-9) notation.
+    static describeMove(move, game) {
+        const files = ["a", "b", "c", "d", "e", "f", "g", "h", "i"];
+        const coord = function(row, col) {
+            return files[col] + (row + 1);
+        };
+        if (move[0]) {
+            const row = move[0][0];
+            const col = move[0][1];
+            let direction = "";
+            if (game && game.pawnOfTurn && game.pawnOfTurn.position) {
+                const cur = game.pawnOfTurn.position;
+                const dRow = row - cur.row;
+                const dCol = col - cur.col;
+                const isJump = (Math.abs(dRow) === 2 || Math.abs(dCol) === 2 || (dRow !== 0 && dCol !== 0));
+                if (isJump) {
+                    direction = "jump ";
+                }
+                if (dRow < 0 && dCol === 0) direction += "up";
+                else if (dRow > 0 && dCol === 0) direction += "down";
+                else if (dRow === 0 && dCol < 0) direction += "left";
+                else if (dRow === 0 && dCol > 0) direction += "right";
+                else if (isJump) direction = direction.trim();
+            }
+            direction = direction.trim();
+            return "Move pawn" + (direction ? " " + direction : "") + " → " + coord(row, col);
+        } else if (move[1]) {
+            return "Horizontal wall @ " + coord(move[1][0], move[1][1]);
+        } else if (move[2]) {
+            return "Vertical wall @ " + coord(move[2][0], move[2][1]);
+        }
+        return "unknown move";
     }
 }
 

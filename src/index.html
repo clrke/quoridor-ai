@@ -98,6 +98,21 @@
                     <button type="button" class="restart_yes_no" id="restart_yes">start</button>
                 </div>
             </div>
+            <div class="fade_box in hidden" id="coach_message_box">
+                <div class="coach_title">Move Review — Strong AI</div>
+                <div id="coach_analyzing">
+                    <div class="coach_analyzing_text">The Strong AI is reviewing your move…</div>
+                    <div id="coach_progress_bar_container"><div id="coach_progress_bar" style="width:0%;"></div></div>
+                </div>
+                <div id="coach_result" class="hidden">
+                    <div class="coach_line">Your move:<br><span id="coach_player_move" class="coach_move"></span></div>
+                    <div class="coach_line">Strong AI suggests:<br><span id="coach_ai_move" class="coach_move"></span></div>
+                    <div id="coach_verdict"></div>
+                    <div class="button_container in_message_box">
+                        <button type="button" id="coach_continue" class="coach_continue">continue</button>
+                    </div>
+                </div>
+            </div>
             <div class="fade_box in hidden" id="update_notification_message_box">
                 A new version is available. Update now?
                 <div class="button_container in_message_box">
@@ -443,6 +458,7 @@
                 <button type="button" id="cancel_button" class="button below cancel">cancel</button>
                 <button type="button" id="confirm_button" class="button below confirm">confirm</button>
                 <button type="button" id="aido_button" class="button below aido hidden">AI do</button>
+                <button type="button" id="coach_toggle" class="button below coach_toggle">coach: on</button>
                 <input class="hidden" type="number" id="uctConst">
                 <input class="hidden" type="number" id="rollout_num">
             </div>

@@ -1,5 +1,10 @@
 "use strict";
 
+// Number of MCTS simulations used by the "Strong" level AI.
+// The move-review coach always analyzes with this strength,
+// regardless of which level the human chose to play against.
+const COACH_NUM_MCTS_SIMULATIONS = 60000;
+
 /*
 * Controller part in the MVC pattern
 */
@@ -16,6 +21,12 @@ class Controller {
         this.worker = null;
         this.numOfMCTSSimulations = null;
         this.uctConst = uctConst;
+
+        // Move-review coach: after every human move, the Strong AI reviews it.
+        this.coachEnabled = !aiDevelopMode;
+        this.coachWorker = null;
+        this.pendingHumanMove = null;
+        this.coachGame = null;  // snapshot of the game just before the pending human move
     }
 
     setNewWorker() {
@@ -39,7 +50,90 @@ class Controller {
         };
     }
 
+    // Create a dedicated worker used only for reviewing the human's move
+    // with the Strong AI. It is kept separate from the opponent AI worker.
+    setNewCoachWorker() {
+        if (this.coachWorker !== null) {
+            this.coachWorker.terminate();
+        }
+        this.coachWorker = new Worker('js/worker.js');
+        const onMessageFunc = function(event) {
+            const data = event.data;
+            if (typeof(data) === "number") {
+                this.view.adjustCoachProgressBar(data * 100);
+            } else {
+                // data is the move the Strong AI recommends for coachGame.
+                this.view.showCoachResult(this.coachGame, this.pendingHumanMove, data);
+            }
+        };
+        this.coachWorker.onmessage = onMessageFunc.bind(this);
+        this.coachWorker.onerror = function(error) {
+            console.log('Coach worker error: ' + error.message + '\n');
+            // If the review fails for any reason, just proceed with the move.
+            this.applyPendingHumanMove();
+        }.bind(this);
+    }
+
+    // Entry point for every move made by the human player (called from the view).
+    // When coaching is enabled, first ask the Strong AI what it would have played,
+    // show the comparison modal, and only proceed once the human clicks "continue".
+    humanMove(move) {
+        if (!this.coachEnabled
+            || this.aiDevelopMode
+            || this.game === null
+            || this.game.winner !== null
+            || !this.game.pawnOfTurn.isHumanPlayer
+            || !this.game.isPossibleNextMove(move)) {
+            this.doMove(move);
+            return;
+        }
+        this.pendingHumanMove = move;
+        this.coachGame = Game.clone(this.game);
+        this.setNewCoachWorker();
+        this.view.showCoachAnalyzing();
+        this.coachWorker.postMessage({
+            game: this.coachGame,
+            numOfMCTSSimulations: COACH_NUM_MCTS_SIMULATIONS,
+            uctConst: this.uctConst,
+            aiDevelopMode: false
+        });
+    }
+
+    // Proceed with the human move that was under review (called on "continue").
+    applyPendingHumanMove() {
+        if (this.coachWorker !== null) {
+            this.coachWorker.terminate();
+            this.coachWorker = null;
+        }
+        const move = this.pendingHumanMove;
+        this.pendingHumanMove = null;
+        this.coachGame = null;
+        this.view.hideCoachBox();
+        if (move !== null) {
+            this.doMove(move);
+        }
+    }
+
+    // Abort any in-progress review (e.g. when starting a new game or undoing).
+    cancelCoaching() {
+        if (this.coachWorker !== null) {
+            this.coachWorker.terminate();
+            this.coachWorker = null;
+        }
+        this.pendingHumanMove = null;
+        this.coachGame = null;
+        this.view.hideCoachBox();
+    }
+
+    setCoachEnabled(enabled) {
+        this.coachEnabled = enabled;
+        if (!enabled) {
+            this.cancelCoaching();
+        }
+    }
+
     startNewGame(isHumanPlayerFirst, numOfMCTSSimulations) {
+        this.cancelCoaching();
         this.numOfMCTSSimulations = numOfMCTSSimulations;
         this.setNewWorker();
         let game = new Game(isHumanPlayerFirst);
@@ -80,6 +174,7 @@ class Controller {
     }
 
     undo() {
+        this.cancelCoaching();
         this.setNewWorker();
         this.view.adjustProgressBar(0);
         
@@ -98,6 +193,7 @@ class Controller {
     }
 
     redo() {
+        this.cancelCoaching();
         this.game = this.gameHistoryTrashCan.pop();
         this.gameHistory.push(Game.clone(this.game));
         this.view.game = this.game;
