@@ -229,7 +229,8 @@ class View {
             cancel: document.getElementById("cancel_button"),
             undo: document.getElementById("undo_button"),
             redo: document.getElementById("redo_button"),
-            aiDo: document.getElementById("aido_button")
+            aiDo: document.getElementById("aido_button"),
+            rotate: document.getElementById("rotate_button")
         };
         this.button.confirm.disabled = true;
         this.button.cancel.disabled = true;
@@ -261,6 +262,17 @@ class View {
             this.controller.redo();
         }
         this.button.redo.onclick = onclickRedoButton.bind(this);
+
+        // Rotate view: flips the board 180 degrees (pure CSS transform on
+        // #board_table, see style.css) so it shows the opponent's-seat
+        // perspective. A display preference, not game state, so it's
+        // intentionally left untouched by startNewGame()/restart/undo/redo.
+        const onclickRotateButton = function(e) {
+            const isRotated = this.htmlBoardTable.classList.toggle("rotated");
+            this.button.rotate.classList.toggle("off", !isRotated);
+            this.button.rotate.textContent = isRotated ? "rotate view: on" : "rotate view: off";
+        };
+        this.button.rotate.onclick = onclickRotateButton.bind(this);
 
         const restartButton = document.getElementById("restart_button");
         const onclickRestartButton = function(e) {

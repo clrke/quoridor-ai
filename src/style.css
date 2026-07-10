@@ -410,6 +410,24 @@ button.close {
 .button.aido {
     background-color: var(--color-clay);
 }
+.button.rotate_toggle {
+    background-color: var(--color-teak);
+}
+.button.rotate_toggle.off {
+    background-color: var(--color-stone);
+}
+/*
+* Flips the whole interactive board 180 degrees so the human's pawn appears
+* at the bottom, i.e. the opponent's-seat view. Purely visual: every click
+* handler in view.js derives (row, col) from the table's native rowIndex /
+* cellIndex (DOM identity), never from screen coordinates, so this transform
+* doesn't require any change to game logic, hit-testing, or hover shadows.
+* transform-origin defaults to the element's own center (50% 50%), and
+* #board_table is always square, so this never distorts the board.
+*/
+#board_table.rotated {
+    transform: rotate(180deg);
+}
 /*
 * The about button used to sit in the top-right corner using the same
 * heavy button styling as the primary game actions. It's just an info
